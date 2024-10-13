@@ -10,7 +10,6 @@ import java.time.LocalDate;
 @Setter
 public class MovimientoDTO {
     private LocalDate fecha;
-    private String descripcion;
     private Double monto;
     private String tipoMovimiento;
     private Double saldo;
