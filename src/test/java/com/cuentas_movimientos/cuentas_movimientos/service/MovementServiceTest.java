@@ -9,24 +9,21 @@ import com.cuentas_movimientos.cuentas_movimientos.model.pojo.Customer;
 import com.cuentas_movimientos.cuentas_movimientos.model.pojo.Movement;
 import com.cuentas_movimientos.cuentas_movimientos.model.request.CreateAccountRequest;
 import com.cuentas_movimientos.cuentas_movimientos.model.request.MovementRequest;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class MovementServiceTest {
+class MovementServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
@@ -40,66 +37,27 @@ public class MovementServiceTest {
     @InjectMocks
     private MovementServiceImpl movementService; // Clase que contiene el método a probar
 
-    @Mock
-    private MovementRequest request;
 
-    @Mock
-    private Account account;
-
-//    @BeforeEach
-//    void setUp() {
-//        // Configurar la cuenta y la solicitud de movimiento
-//        account = new Account();
-//        account.setNumeroCuenta("1231243");
-//        account.setSaldoInicial(1000.0);
-//
-//        CreateAccountRequest accountRequest = new CreateAccountRequest();
-//        accountRequest.setNumberAccount("1231243");  // Asegúrate de asignar el número de cuenta
-//        accountRequest.setTypeAccount("deposito");
-//        accountRequest.setState(true);
-//        accountRequest.setInitialBalance(1000.0);
-//        accountRequest.setCustomer(customer);
-//
-//        request = new MovementRequest();
-//        request.setAccountRequest(accountRequest);
-//        request.setTypeMovement("deposito");
-//        request.setValue(500.0);
-//        request.setDateTime(LocalDateTime.now());
-//    }
 
     @Test
-    void testCreateMovement_Deposit_Success() {
+    void testCreateMovementDepositSuccess() {
         CreateAccountRequest createAccountRequest = new CreateAccountRequest(
                 "1231243", "ahorros", 500.0, true, customer
         );
 
-//        Account account = Account.builder()
-//                .id(1L)
-//                .numeroCuenta("1231243")
-//                .tipoCuenta("ahorros")
-//                .saldoInicial(500.0)
-//                .estado(true)
-//                .build();
-
         MovementRequest request = new MovementRequest(
                 1L, LocalDateTime.now(), "deposito", 100.0, 0.0, createAccountRequest
         );
-        Movement expectedMovement = Movement.builder()
-                .fecha(request.getDateTime())
-                .tipoMovimiento(request.getTypeMovement())
-                .valor(request.getValue())
-                .saldo(600.0)
-                .account(account)
-                .build();
+        Account account = new Account();
+        account.setNumeroCuenta("1231243");
+        account.setTipoCuenta("ahorros");
+        account.setSaldoInicial(500.0);
+        account.setEstado(true);
 
         when(accountRepository.findByNumeroCuenta("1231243")).thenReturn(Optional.of(account));
         when(movementRepository.findFirstByAccountNumeroCuentaOrderByIdDesc("1231243"))
-                .thenReturn(Optional.empty()); // No hay movimientos previos
-        when(movementRepository.save(any())).thenReturn(expectedMovement);
-
-//        when(movementRepository.save(any(Movement.class)))
-//                .thenAnswer(invocation -> invocation.getArgument(0)); // Retorna el movimiento guardado
-
+                .thenReturn(Optional.empty());
+        when(movementRepository.save(any())).then(returnsFirstArg());
 
         Movement result = movementService.createMovement(request);
 
@@ -109,24 +67,29 @@ public class MovementServiceTest {
     }
 
 
-
     @Test
-    public void test_create_movement_invalid_account() {
-        MovementRepository movementRepository = Mockito.mock(MovementRepository.class);
-        AccountRepository accountRepository = Mockito.mock(AccountRepository.class);
-        MovementServiceImpl movementService = new MovementServiceImpl(movementRepository, accountRepository);
+    void testGeneralException() {
 
-        Mockito.when(accountRepository.findByNumeroCuenta(Mockito.anyString()))
-                .thenReturn(Optional.empty());
+        Account account = Account.builder()
+                .id(1L)
+                .numeroCuenta("123456")
+                .saldoInicial(100.0)
+                .build();
 
-        MovementRequest request = new MovementRequest();
-        CreateAccountRequest accountRequest = new CreateAccountRequest();
-        accountRequest.setNumberAccount("invalid");
-        request.setAccountRequest(accountRequest);
+        MovementRequest request = new MovementRequest(
+                1L,
+                LocalDateTime.now(),
+                "retiro",
+                200.0,
+                0.0,
+                new CreateAccountRequest("123456", "savings", 100.0, true, null)
+        );
 
-        Assertions.assertThrows(GeneralException.class, () -> {
-            movementService.createMovement(request);
-        });
+        doReturn(Optional.of(account)).when(accountRepository).findByNumeroCuenta("123456");
+        doReturn(Optional.empty()).when(movementRepository).findFirstByAccountNumeroCuentaOrderByIdDesc("123456");
+
+        assertThrows(GeneralException.class, () -> movementService.createMovement(request));
     }
+
 
 }

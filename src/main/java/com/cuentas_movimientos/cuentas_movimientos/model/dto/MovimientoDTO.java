@@ -1,16 +1,10 @@
 package com.cuentas_movimientos.cuentas_movimientos.model.dto;
 
+import java.time.LocalDateTime;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDate;
-
-@Getter
-@Setter
-public class MovimientoDTO {
-    private LocalDate fecha;
-    private Double monto;
-    private String tipoMovimiento;
-    private Double saldo;
-}
+public record MovimientoDTO(
+        LocalDateTime fecha,
+        Double monto,
+        String tipoMovimiento,
+        Double saldo
+) {}

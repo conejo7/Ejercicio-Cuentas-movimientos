@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+
 
 @Service
 public class ReporteService {
@@ -31,7 +33,7 @@ public class ReporteService {
     public ReporteDTO generarReporte(String fechaInicio, String fechaFin, Long clienteId, int page, int size) {
 
         LocalDateTime inicio = LocalDate.parse(fechaInicio).atStartOfDay();
-        LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23,59,59);
+        LocalDateTime fin = LocalDate.parse(fechaFin).atTime(23, 59, 59);
 
         List<Account> cuentas = cuentaRepository.findByCustomer_Clienteid(clienteId);
 
@@ -39,41 +41,50 @@ public class ReporteService {
             throw new GeneralException("No se encontró la cuenta para el cliente con ID: " + clienteId);
         }
 
-        ReporteDTO reporte = new ReporteDTO();
-        reporte.setClienteId(clienteId);
-        reporte.setNombreCliente(cuentas.get(0).getCustomer().getPerson().getNombre());
+        String nombreCliente = cuentas.get(0).getCustomer().getPerson().getNombre();
+        ReporteDTO reporte = new ReporteDTO(clienteId, nombreCliente, new ArrayList<>());
 
-        for (Account cuenta : cuentas) {
-            CuentaDTO cuentaDTO = new CuentaDTO();
-            cuentaDTO.setNumeroCuenta(cuenta.getNumeroCuenta());
-            cuentaDTO.setTipoCuenta(cuenta.getTipoCuenta());
-            cuentaDTO.setSaldoInicial(cuenta.getSaldoInicial());
-            cuentaDTO.setEstado(cuenta.getEstado());
+        List<CuentaDTO> cuentasDTO = cuentas.stream()
+                .map(cuenta -> mapearCuentaDTO(cuenta, inicio, fin, page, size))
+                .toList();
 
-            PageRequest pageRequest = PageRequest.of(page, size);
-            Page<Movement> movimientos = movimientoRepository.findByAccountIdAndFechaBetween(
-                    cuenta.getId(), inicio, fin, pageRequest
-            );
-
-            for (Movement movimiento : movimientos) {
-                MovimientoDTO movDTO = new MovimientoDTO();
-                movDTO.setFecha(LocalDate.from(movimiento.getFecha()));
-
-                movDTO.setMonto(movimiento.getValor());
-                movDTO.setTipoMovimiento(movimiento.getTipoMovimiento());
-                movDTO.setSaldo(movimiento.getSaldo());
-
-                cuentaDTO.addMovimiento(movDTO);
-            }
-            cuentaDTO.setTotalMovimientos(movimientos.getTotalElements());
-            cuentaDTO.setTotalPaginas(movimientos.getTotalPages());
-            cuentaDTO.setPaginaActual(movimientos.getNumber());
-
-            reporte.addCuenta(cuentaDTO);
-
-        }
+        cuentasDTO.forEach(reporte::addCuenta);
 
         return reporte;
     }
 
+    private CuentaDTO mapearCuentaDTO(Account cuenta, LocalDateTime inicio, LocalDateTime fin, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // Obtener los movimientos paginados de la cuenta
+        Page<Movement> movimientos = movimientoRepository.findByAccountIdAndFechaBetween(
+                cuenta.getId(), inicio, fin, pageRequest
+        );
+
+        // Convertir los movimientos a DTOs
+        List<MovimientoDTO> movimientosDTO = movimientos.stream()
+                .map(this::mapearMovimientoDTO)
+                .toList();
+
+        // Retornar un CuentaDTO inmutable (usando record)
+        return new CuentaDTO(
+                cuenta.getNumeroCuenta(),
+                cuenta.getTipoCuenta(),
+                cuenta.getSaldoInicial(),
+                cuenta.getEstado(),
+                movimientosDTO,
+                movimientos.getTotalPages(),
+                movimientos.getNumber(),
+                movimientos.getTotalElements()
+        );
+    }
+
+    private MovimientoDTO mapearMovimientoDTO(Movement movimiento) {
+        return new MovimientoDTO(
+                movimiento.getFecha(),
+                movimiento.getValor(),
+                movimiento.getTipoMovimiento(),
+                movimiento.getSaldo()
+        );
+    }
 }

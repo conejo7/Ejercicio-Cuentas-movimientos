@@ -57,10 +57,10 @@ public class MovementServiceImpl implements MovementService {
     public Movement updateMovement(String movementId, MovementRequest movementRequest) {
         Movement movement = movementRepository.findById(Long.valueOf(movementId)).orElse(null);
         if (movement !=null){
-            movement.setFecha(movementRequest.getDateTime());
-            movement.setTipoMovimiento(movementRequest.getTypeMovement());
-            movement.setValor(movementRequest.getValue());
-            movement.setSaldo(movementRequest.getBalance());
+            movement.setFecha(movementRequest.dateTime());
+            movement.setTipoMovimiento(movementRequest.typeMovement());
+            movement.setValor(movementRequest.value());
+            movement.setSaldo(movementRequest.balance());
 
             movementRepository.save(movement);
         }
@@ -73,34 +73,34 @@ public class MovementServiceImpl implements MovementService {
     public Movement createMovement(MovementRequest request) {
 
         Account account = accountRepository
-                .findByNumeroCuenta(request.getAccountRequest().getNumberAccount())
+                .findByNumeroCuenta(request.accountRequest().numberAccount())
                 .orElseThrow(() -> new GeneralException("Cuenta no encontrada o inactiva"));
         // Obtener el último movimiento, si existe
         double saldoActual = movementRepository
-                .findFirstByAccountNumeroCuentaOrderByIdDesc(request.getAccountRequest().getNumberAccount())
+                .findFirstByAccountNumeroCuentaOrderByIdDesc(request.accountRequest().numberAccount())
                 .map(Movement::getSaldo) // Si existe un movimiento, usar su saldo
                 .orElse(account.getSaldoInicial()); // Si no existe, usar el saldo inicial
 
-        Movement movement = null;
-        if (request.getTypeMovement().equalsIgnoreCase("retiro")) { //F2
-            if (saldoActual < request.getValue()) {
+        Movement movement ;
+        if (request.typeMovement().equalsIgnoreCase("retiro")) { //F2
+            if (saldoActual < request.value()) {
                 throw new GeneralException("Saldo insuficiente para realizar el retiro"); //F3
             }
-            double nuevoSaldo = saldoActual - request.getValue();
+            double nuevoSaldo = saldoActual - request.value();
             movement = Movement.builder()
-                    .fecha(request.getDateTime())
-                    .tipoMovimiento(request.getTypeMovement())
-                    .valor(request.getValue())
+                    .fecha(request.dateTime())
+                    .tipoMovimiento(request.typeMovement())
+                    .valor(request.value())
                     .saldo(nuevoSaldo)
                     .account(account)
                     .build();
 
-        } else if (request.getTypeMovement().equalsIgnoreCase("deposito")) {
-            double nuevoSaldo = saldoActual + request.getValue();
+        } else if (request.typeMovement().equalsIgnoreCase("deposito")) {
+            double nuevoSaldo = saldoActual + request.value();
             movement = Movement.builder()
-                    .fecha(request.getDateTime())
-                    .tipoMovimiento(request.getTypeMovement())
-                    .valor(request.getValue())
+                    .fecha(request.dateTime())
+                    .tipoMovimiento(request.typeMovement())
+                    .valor(request.value())
                     .saldo(nuevoSaldo)
                     .account(account)
                     .build();

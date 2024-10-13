@@ -2,6 +2,7 @@ package com.cuentas_movimientos.cuentas_movimientos.service;
 
 
 import com.cuentas_movimientos.cuentas_movimientos.data.AccountRepository;
+import com.cuentas_movimientos.cuentas_movimientos.exception.GeneralException;
 import com.cuentas_movimientos.cuentas_movimientos.facade.MovementFacade;
 import com.cuentas_movimientos.cuentas_movimientos.model.pojo.Account;
 import com.cuentas_movimientos.cuentas_movimientos.model.pojo.Customer;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -54,18 +56,23 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Account createAccount(CreateAccountRequest request) {
 
-        if (request != null && StringUtils.hasLength(request.getNumberAccount().trim())
-                && StringUtils.hasLength(request.getTypeAccount().trim())
-                && StringUtils.hasLength(String.valueOf(request.getInitialBalance()))) {
+        if (request != null && StringUtils.hasLength(request.numberAccount().trim())
+                && StringUtils.hasLength(request.typeAccount().trim())
+                && StringUtils.hasLength(String.valueOf(request.initialBalance()))) {
 
-            Customer cliente = movementFacade.getClientById(String.valueOf(request.getCustomer().getClienteid()));
-
-            if (cliente == null ) {
-                throw new IllegalArgumentException("Cliente no encontrado ");
+            Optional<Account> existingAccount = accountRepository.findByNumeroCuenta(request.numberAccount().trim());
+            if (existingAccount.isPresent()) {
+                throw new GeneralException("El número de cuenta ya se encuentra registrado.");
             }
 
-            Account account = Account.builder().numeroCuenta(request.getNumberAccount()).tipoCuenta(request.getTypeAccount())
-                    .saldoInicial(request.getInitialBalance()).estado(request.isState()).customer(cliente).build();
+            Customer cliente = movementFacade.getClientById(String.valueOf(request.customer().getClienteid()));
+
+            if (cliente == null ) {
+                throw new GeneralException("Cliente no encontrado ");
+            }
+
+            Account account = Account.builder().numeroCuenta(request.numberAccount()).tipoCuenta(request.typeAccount())
+                    .saldoInicial(request.initialBalance()).estado(request.state()).customer(cliente).build();
 
             return accountRepository.save(account);
         } else {
@@ -77,10 +84,10 @@ public class AccountServiceImpl implements AccountService {
     public Account updateAccount(String accountId, CreateAccountRequest clientRequest) {
         Account account = accountRepository.findById(Long.valueOf(accountId)).orElse(null);
         if (account !=null){
-            account.setNumeroCuenta(clientRequest.getNumberAccount());
-            account.setTipoCuenta(clientRequest.getTypeAccount());
-            account.setSaldoInicial(clientRequest.getInitialBalance());
-            account.setEstado(clientRequest.isState());
+            account.setNumeroCuenta(clientRequest.numberAccount());
+            account.setTipoCuenta(clientRequest.typeAccount());
+            account.setSaldoInicial(clientRequest.initialBalance());
+            account.setEstado(clientRequest.state());
 
             accountRepository.save(account);
         }

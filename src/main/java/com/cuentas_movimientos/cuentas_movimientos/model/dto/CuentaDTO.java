@@ -1,25 +1,16 @@
 package com.cuentas_movimientos.cuentas_movimientos.model.dto;
 
-
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.ArrayList;
 import java.util.List;
-@Getter
-@Setter
-public class CuentaDTO {
-    private String numeroCuenta;
-    private String tipoCuenta;
-    private Double saldoInicial;
-    private boolean estado;
-    private List<MovimientoDTO> movimientos = new ArrayList<>();
 
-    private int paginaActual;
-    private int totalPaginas;
-    private long totalMovimientos;
+public record CuentaDTO (
+     String numeroCuenta,
+     String tipoCuenta,
+     Double saldoInicial,
+     boolean estado,
+     List<MovimientoDTO> movimientos ,
 
-    public void addMovimiento(MovimientoDTO movimiento) {
-        this.movimientos.add(movimiento);
-    }
+     int paginaActual,
+     int totalPaginas,
+     long totalMovimientos)
+{
 }
