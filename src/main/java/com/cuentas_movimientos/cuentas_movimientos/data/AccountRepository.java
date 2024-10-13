@@ -1,0 +1,13 @@
+package com.cuentas_movimientos.cuentas_movimientos.data;
+
+
+import com.cuentas_movimientos.cuentas_movimientos.model.pojo.Account;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+
+public interface AccountRepository extends JpaRepository<Account,Long> {
+
+    Optional<Account> findByNumeroCuenta(String numeroCuenta);
+}
