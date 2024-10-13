@@ -1,0 +1,36 @@
+
+## Configuracion de Spring
+spring:
+  application:
+    name: cuenta-movimiento
+  datasource:
+    url: jdbc:postgresql://localhost:5433/ejercicio
+    username: postgres
+    password: conejoej7
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+## Configuracion de Instancia
+server:
+  port: 8089
+
+#  ## Configuracion del cliente de Eureka
+#  eureka:
+#    client:
+#      service-url:
+#        defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+#    instance:
+#      preferIpAddress: true
+#      hostname: cuenta-movimiento
+
+
+## Configuracion secundaria (custom)
+#getClient:
+#  url: http://cliente-persona/clientes/%s
+
+getClient:
+   url: http://localhost:8088/clientes/
